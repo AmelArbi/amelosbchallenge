@@ -28,7 +28,6 @@ public class ServiceOffering {
 
     private Boolean allowContextUpdates;
 
-
     private Object metadata;
 
     private DashboardClient dashboardClient;

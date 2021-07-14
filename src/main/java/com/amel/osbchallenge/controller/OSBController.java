@@ -1,10 +1,11 @@
 package com.amel.osbchallenge.controller;
 
 import java.util.List;
+import javax.validation.Valid;
+import com.amel.osbchallenge.model.ServiceInstance;
 import com.amel.osbchallenge.model.ServiceOffering;
-import com.amel.osbchallenge.model.ServiveInstanceRequest;
 import com.amel.osbchallenge.model.ServiveInstanceResponse;
-import com.amel.osbchallenge.service.ServiceOfferingService;
+import com.amel.osbchallenge.service.ServiceInstanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,28 +25,35 @@ import lombok.AllArgsConstructor;
 public class OSBController {
 
     private static final Logger logger = LoggerFactory.getLogger(OSBController.class);
-    private final ServiceOfferingService serviceOfferingService;
+    private final ServiceInstanceService serviceInstanceService;
 
     @GetMapping("/catalog")
     public ResponseEntity<List<ServiceOffering>> getCatalog() {
-        List<ServiceOffering> services = serviceOfferingService.getServiceOfferings();
+        List<ServiceOffering> services = serviceInstanceService.getServiceOfferings();
         return new ResponseEntity<>(services, HttpStatus.OK);
     }
 
     @PutMapping("/service_instances/{instance_id}")
     public ResponseEntity<ServiveInstanceResponse> createServiceInstance(
-            @PathVariable("instance_id") String serviceInstanceId,
+            @PathVariable("instance_id") String instanceId,
             @RequestParam(value = "accepts_incomplete", required = false) Boolean acceptsIncomplete,
-            @RequestBody ServiveInstanceRequest request
+            @Valid @RequestBody ServiceInstance request
     ) {
-        //@TODO instance_id prüfen ob die bekannt ist und ggf speichern
-
-        //getService Offering or throw EntityNotFoundException
-        ServiceOffering serviceOffering = serviceOfferingService.getServiceOfferingById(request.getServiceId());
-        ServiveInstanceResponse response = serviceOfferingService.createServiceInstance(serviceOffering, request);
-        logger.info("Service Instance with id {} created ", serviceOffering.getId());
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        ServiceInstance serviceInstance = serviceInstanceService.getInstance(instanceId);
+        if (serviceInstance == null) {
+            logger.info("Service instance with id {} not found. Service instance will be created", instanceId);
+            serviceInstance = serviceInstanceService.createServiceInstance(instanceId, request);
+            return new ResponseEntity<>(serviceInstanceService.createServiceInstanceResponse(serviceInstance),
+                    HttpStatus.CREATED);
+        } else {
+            if (serviceInstance.equals(request)) {
+                ServiveInstanceResponse response = serviceInstanceService.getServiceInstanceResponse(instanceId);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+        }
+        //@TODO implement return 202 Accepted and 422 Unprocessable Entity
     }
 
 }

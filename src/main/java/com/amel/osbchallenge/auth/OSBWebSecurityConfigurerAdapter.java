@@ -26,7 +26,7 @@ public class OSBWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapte
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
+        http.csrf().disable().authorizeRequests()
                 .anyRequest().authenticated()
                 .and()
                 .httpBasic()
